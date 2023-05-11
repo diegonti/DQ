@@ -16,15 +16,18 @@ def get_fR(x,t): return boundary(C*np.cos(k*x-w*t)*np.exp(-(x-x0)**2/(2*s**2)))
 def get_fI(x,t): return boundary(C*np.sin(k*x-w*t)*np.exp(-(x-x0)**2/(2*s**2)))
 
 @numba.jit(nopython=True, nogil=True, cache=True)
-def V(x,t): return 0
+def get_V(x,t): return np.zeros(len(x))
 
-def module(fR,fI): return fR**2 + fI**2
 
+@numba.jit(nopython=True, nogil=True, cache=True)
 def get_norm(f): return np.sum(np.abs(f)**2)*dx
     
 
+def module(fR,fI): return fR**2 + fI**2
+
+
 @numba.jit(nopython=True, nogil=True, cache=True)
-def evolve(fR,fI):
+def evolve(fR,fI,V):
     """Evolves the real and imaginary part of the Wavefunction. Uses numba to accelerate the process.
 
     Parameters
@@ -39,10 +42,16 @@ def evolve(fR,fI):
 
     """
     for i in range(1,Nx-1):
-        fR[i] = fR[i] - dt*h/(2*m*dx**2)*(fI[i+1]-2*fI[i]+fI[i-1]) - dt*V(0,0)*fI[i]
+        fR[i] = fR[i] - dt*h/(2*m*dx**2)*(fI[i+1]-2*fI[i]+fI[i-1]) - dt*V[i]*fI[i]
 
     for i in range(1,Nx-1):
-        fI[i] = fI[i] + dt*h/(2*m*dx**2)*(fR[i+1]-2*fR[i]+fR[i-1]) - dt*V(0,0)*fR[i]
+        fI[i] = fI[i] + dt*h/(2*m*dx**2)*(fR[i+1]-2*fR[i]+fR[i-1]) - dt*V[i]*fR[i]
+
+    # normR = get_norm(fR)
+    # normI = get_norm(fI)
+
+    # fR = fR/normR
+    # fI = fI/normI
 
     # fR[0], fR[-1] = 0,0
     # fI[0], fI[-1] = 0,0
@@ -129,6 +138,7 @@ m = 1
 # Initialization
 fR = boundary(get_fR(x,0))
 fI = boundary(get_fI(x,0))
+V = get_V(x,0)
 
 # Integration Loop
 print("\nStarting integration...")
@@ -136,7 +146,7 @@ print("Completed:", end=" ")
 
 fR_frames, fI_frames = [],[]
 for i,t_i in enumerate(t):
-    fR,fI = evolve(fR,fI)
+    fR,fI = evolve(fR,fI,V)
 
     # Save frames for animation
     if i%int(Nt/animation_frames) == 0 : 
