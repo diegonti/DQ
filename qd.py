@@ -49,8 +49,9 @@ def evolve(fR,fI):
 
     return fR, fI
 
+
 def Animation(frame):
-    """Function that creates a frame for the GIF."""
+    """Function that creates a mpl frame for the GIF visualization."""
     ax1.clear();ax2.clear()
 
     # Real Part
@@ -85,6 +86,8 @@ def write(line,file):
 	print(line,flush=True)
 	with open(file,"a",encoding="utf-8") as outFile: outFile.write(line+"\n")
 
+
+############################### MAIN PROGRAM ###############################
 
 initial_time = cpu_time()
 
@@ -131,14 +134,11 @@ fI = boundary(get_fI(x,0))
 print("\nStarting integration...")
 print("Completed:", end=" ")
 
-
 fR_frames, fI_frames = [],[]
 for i,t_i in enumerate(t):
     fR,fI = evolve(fR,fI)
-    # fI = evolveI(fI,fR)
 
-    # print(fR)
-
+    # Save frames for animation
     if i%int(Nt/animation_frames) == 0 : 
         fR_frames.append(fR.copy())
         fI_frames.append(fI.copy())
@@ -152,7 +152,9 @@ finish_time = cpu_time()
 print(f"\nProcess finished in {finish_time-initial_time:.2f}s")
 
 
-# Creating GIF animation of the evolution of concentrations
+
+
+# Creating GIF animation of the evolution of the wavefunction
 print("\nStarting animation...")
 initial_time2  = cpu_time()
 
@@ -161,8 +163,6 @@ fig.tight_layout()
 
 animation = FuncAnimation(fig,Animation,frames=animation_frames,interval=20,blit=False,repeat=True, )
 animation.save(animation_name,dpi=120,writer=PillowWriter(fps=25))
-# fig.tight_layout()
-# plt.show()
 
 finish_time2  = cpu_time()
 print(f"Process finished in {finish_time2-initial_time2:.2f}s")
