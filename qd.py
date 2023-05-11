@@ -1,3 +1,5 @@
+from time import time as cpu_time
+
 import numba
 import numpy as np
 import matplotlib.pyplot as plt
@@ -84,6 +86,7 @@ def write(line,file):
 	with open(file,"a",encoding="utf-8") as outFile: outFile.write(line+"\n")
 
 
+initial_time = cpu_time()
 
 # Constants
 pi = np.pi
@@ -108,7 +111,7 @@ duration = Nt*dt                 # Total time
 t = np.arange(0,duration+dt,dt)
 
 # Animation Inputs
-animation_frames = 200
+animation_frames = 50
 animation_name = "dq.gif"
 
 # Wavefunction inputs:
@@ -125,7 +128,9 @@ fR = boundary(get_fR(x,0))
 fI = boundary(get_fI(x,0))
 
 # Integration Loop
-print("\n Starting integration...")
+print("\nStarting integration...")
+print("Completed:", end=" ")
+
 
 fR_frames, fI_frames = [],[]
 for i,t_i in enumerate(t):
@@ -137,15 +142,28 @@ for i,t_i in enumerate(t):
     if i%int(Nt/animation_frames) == 0 : 
         fR_frames.append(fR.copy())
         fI_frames.append(fI.copy())
+    
+    # % Completed
+    if i%(Nt/10) == 0:
+        print(f"{int(100*i/Nt)}% ",sep=" ",end="",flush=True)
         
 fR_frames, fI_frames = np.array(fR_frames), np.array(fI_frames)
+finish_time = cpu_time()
+print(f"\nProcess finished in {finish_time-initial_time:.2f}s")
 
 
 # Creating GIF animation of the evolution of concentrations
 print("\nStarting animation...")
+initial_time2  = cpu_time()
+
 fig,(ax1,ax2) = plt.subplots(1,2,figsize=(10,4))
+fig.tight_layout()
 
 animation = FuncAnimation(fig,Animation,frames=animation_frames,interval=20,blit=False,repeat=True, )
 animation.save(animation_name,dpi=120,writer=PillowWriter(fps=25))
 # fig.tight_layout()
-plt.show()
+# plt.show()
+
+finish_time2  = cpu_time()
+print(f"Process finished in {finish_time2-initial_time2:.2f}s")
+
