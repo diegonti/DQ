@@ -23,7 +23,7 @@ $$
     Ψ_R=Ccos(kx-ωt) e^{-(x-x_0 )^2/(2σ^2 )} \\
     Ψ_I=Csin(kx-ωt) e^{-(x-x_0 )^2/(2σ^2 )} \\
 \end{array} 
-\right\}  
+\right. 
 $$
 
 The simulations have been carried out in a box of $L=100$ a.u. Forcing the wave function to be zero at the extremes of the box, i.e. $Ψ(0,t)=Ψ(L,t)=0$. To simplify the simulation, atomic units have been used for all the variables.
