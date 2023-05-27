@@ -17,14 +17,12 @@ $$ \Psi(x,t) = Ce^{-(x-x_0)^2/(2σ^2)} e^{i(kx-ωt)} $$
 
 where $C$ is the normalization constant, $k$ the wave number, $\omega$ the angular frequency, and $x_0$ and $\sigma$ the gaussian centre and width, respectively. To ease the integration process, the above wavefunction as been separated into a real and imaginary part, with expressions as follows:
 
-<!-- $$ 
-\Psi(x,t)=\Psi_R+i\Psi_I  \left\{
-\begin{array}{ll}
-    Ψ_R=Ccos(kx-ωt) e^{-(x-x_0 )^2/(2σ^2 )} \\
-    Ψ_I=Csin(kx-ωt) e^{-(x-x_0 )^2/(2σ^2 )} \\
-\end{array} 
-\right. 
-$$ -->
+$$
+\Psi(x,t)=\Psi_R+i\Psi_I = \begin{cases}
+    Ψ_R = Ccos(kx-ωt) e^{-(x-x_0)^2/(2σ^2)} \\
+    Ψ_I=Csin(kx-ωt) e^{-(x-x_0)^2/(2σ^2)}
+\end{cases}
+$$
 
 The simulations have been carried out in a box of $L=100$ a.u. Forcing the wave function to be zero at the extremes of the box, i.e. $Ψ(0,t)=Ψ(L,t)=0$. To simplify the simulation, atomic units have been used for all the variables.
 
@@ -34,15 +32,9 @@ $$
 V(x) = \begin{cases}
    V_0 & \text{if }\ 0.9x_e < x < 1.1x_e \\
     0  & \text{otherwise}
-       \end{cases}
+\end{cases}
 $$
 
-$$
-f(x) = \begin{cases}
-        2x, & \text{if } x < 0 \\
-        x^2, & \text{if } x \geq 0
-       \end{cases}
-$$
 
 A harmonic potential, was also used, centered at $x_e$ and adjusted with the factor $\alpha$:
 
