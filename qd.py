@@ -10,7 +10,7 @@ warnings.filterwarnings("ignore", category=numba.errors.NumbaDeprecationWarning)
 warnings.filterwarnings("ignore", category=numba.errors.NumbaWarning)
 
 
-
+######################## Wavefunctions and Potential expressions ###########################
 
 def boundary(f): 
     """Sets extremes of array to 0."""
@@ -21,12 +21,58 @@ def get_fR(x,t): return boundary(C*np.cos(k*x-w*t)*np.exp(-(x-x0)**2/(2*s**2)))
 
 def get_fI(x,t): return boundary(C*np.sin(k*x-w*t)*np.exp(-(x-x0)**2/(2*s**2)))
 
-@numba.jit(nopython=True, nogil=True, cache=True)
-def get_V(x,t): 
-    V0 = 0
+def get_V(x,type:str=None,t=None,**params): 
+    """Function to choose and calculate the potential array.
+
+    Parameters
+    ----------
+    `x` : Position array.\n
+    `t` : Time point. Optional, by default None.\n
+    `type` : The type of potential to use. Optional, by default 0. Available are:\n
+        `barrier` : Potential barrier of value V0 and centered at xe.\n
+        `harmonic` : Harmonic potential centered at xe with force constant k. V = 0.5*k*(x-xe)**2\n
+        `morse` : Morse potential centerded at xe with dissociation energy D and force constant k. V = D*(1-np.exp(-alpha*(x-xe)))**2\n
+    `**params` : Extra keyword parameters needed for the potential function. For each case, minding the order:
+        `barrier` : xe, V0.\n
+        `harmonic` : xe, k.\n
+        `morse` : D, xe, k.\n
+        
+    Returns
+    -------
+    `V` : Potential array.
+    """
+    if type is None: type = "zero"
+
+    type = type.lower()
+    if type == "barrier":
+        xe = params.get("xe",L/2)
+        V0 = params.get("V0",1)
+        V = barrier(x,xe,V0)
+    elif type == "harmonic":
+        xe = params.get("xe",L/2)
+        k = params.get("k",3)
+        V = harmonic(x,xe,k)
+    elif type == "morse":
+        D = params.get("D",4)
+        xe = params.get("xe",L/2)
+        k = params.get("k",3)
+        V = morse(x,D,xe,k)
+    elif type.startswith("zero"):
+        V = np.zeros(len(x))
+    else: raise ValueError("Potential type not detected. Pleas select one from the following: zero, barrier, harmonic, morse.")
+
+    return V
+
+def morse(x,D,xe,k):
+    alpha = np.sqrt(k/(2*D))
+    return D*(1-np.exp(-alpha*(x-xe)))**2
+
+def harmonic(x,xe,k):
+    return 0.5*k*(x-xe)**2
+
+def barrier(x,xe,V0):
     V = np.zeros(len(x))
-    
-    sites = np.logical_and( x>0.9*center , x<1.1*center)
+    sites = np.logical_and( x>0.9*xe , x<1.1*xe)
     V[sites] = V0
     return V
 
@@ -38,6 +84,8 @@ def get_norm(fR,fI): return np.sum(module(fR,fI))*dx
 @numba.jit(nopython=True, nogil=True, cache=True)
 def module(fR,fI): return fR**2 + fI**2
 
+
+################################ Animation Functions ################################
 
 def Animation_split(frame):
     """Function that creates a mpl frame for the GIF visualization. Separates real and momentum space."""
@@ -120,6 +168,8 @@ def Animation(frame):
 
     return fRt,fIt
 
+
+########################### Evolution Functions #################################33
 @numba.jit(nopython=True, nogil=True, cache=True)
 def get_k(fR,fI,V):
     fR_c = fR.copy()
@@ -158,7 +208,20 @@ def evolve(fR,fI,V):
 
 # @numba.jit(nogil=True, cache=True)
 def evolveRK(fR,fI,V):
-    """Evolves Wavefunction using RK4 method."""
+    """Evolves the real and imaginary part of the Wavefunctionm using the RK4 method.
+
+    Parameters
+    ----------
+    `fR` : Real part of the wavefunction.
+    `fI` : Imaginary part of the wavefunction.
+    `V`  : Potential.
+
+    Returns
+    -------
+    `fR_f` : Updated real part of the wavefunction.
+    `fI_f` : Updated imaginary part of the wavefunction.
+
+    """
 
     fR_0 = fR.copy()
     fI_0 = fI.copy()
@@ -208,15 +271,15 @@ Eh = hbar**2/(me*a0**2)
 # Spatial Inputs
 L = 100
 dx = 0.1
-x0 = 10
+x0 = 40
 center = L/2
 x = np.arange(0,L+dx,dx)
 Nx = len(x)
 
 # Time Inputs
 dt = 1e-3                      # Time step (au)
-Nt = 200000                     # Time points
-duration = Nt*dt                 # Total time
+Nt = 500000                    # Time points
+duration = Nt*dt               # Total time
 t = np.arange(0,duration+dt,dt)
 
 # Animation Inputs
@@ -234,19 +297,18 @@ m = 5
 
 C = 1/(1*pi*s**2)**(1/4)
 Ck = h/(2*m*dx**2)
+Ek = (h*k)**2/(2*m)
 
 # Initialization
 fR = boundary(get_fR(x,0))
 fI = boundary(get_fI(x,0))
-V = get_V(x,0)
-# C = 1/np.sqrt(get_norm(fR,fI)) # after C=1
-# print(get_norm(fR,fI))
+V = get_V(x,type="morse", xe=center, k=0.001*k)
+
 
 psi_K = np.fft.fft(fR+1j*fI)
 fR_K,fI_K = psi_K.real,psi_K.imag
-conts=get_norm(fR_K,fI_K)
+conts = get_norm(fR_K,fI_K)
 conts = np.sqrt(conts)
-# p = np.linspace(-2*pi,2*pi,len(psi_K))
 p = np.fft.fftfreq(len(psi_K))*1/dx*2*pi
 
 
@@ -282,7 +344,6 @@ for i,t_i in enumerate(t):
                                  
         norm = get_norm(fR,fI)
         norm_frames.append(norm)
-        # print(get_norm(fR_K,fI_K))
     
     # % Completed
     if i%(Nt/10) == 0:
