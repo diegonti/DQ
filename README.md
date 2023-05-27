@@ -33,12 +33,11 @@ Four different potentials are considered. First, the case of a free particle wit
 $$ 
 V(x) = \left\{
 \begin{array}{ll}
-   V_0  \ \ \ if \ 0.9x_e<x<1.1x_e\\
-    0   \ \ \ \ if \ else
+   V_0  \quad \text{if } 0.9x_e<x<1.1x_e\\
+    0   \quad \text{otherwise}
 \end{array} 
 \right.  
 $$
-
 
 A harmonic potential, was also used, centered at $x_e$ and adjusted with the factor $\alpha$:
 
