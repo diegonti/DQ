@@ -18,7 +18,7 @@ $$ \Psi(x,t) = Ce^{-(x-x_0)^2/(2σ^2)} e^{i(kx-ωt)} $$
 where $C$ is the normalization constant, $k$ the wave number, $\omega$ the angular frequency, and $x_0$ and $\sigma$ the gaussian centre and width, respectively. To ease the integration process, the above wavefunction as been separated into a real and imaginary part, with expressions as follows:
 
 $$
-\Psi(x,t)=\Psi_R+i\Psi_I = \begin{cases}
+\Psi(x,t)=\Psi_R+i\Psi_I \begin{cases}
     Ψ_R = Ccos(kx-ωt) e^{-(x-x_0)^2/(2σ^2)} \\
     Ψ_I=Csin(kx-ωt) e^{-(x-x_0)^2/(2σ^2)}
 \end{cases}
