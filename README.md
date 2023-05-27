@@ -30,13 +30,11 @@ The simulations have been carried out in a box of $L=100$ a.u. Forcing the wave 
 
 Four different potentials are considered. First, the case of a free particle with no potential. A potential barrier of $V_0$ value centered at $x_e$, was also considered:
 
-$$ 
-V(x) = \left\{
-\begin{array}{ll}
-   V_0  \quad \text{if } 0.9x_e<x<1.1x_e\\
-    0   \quad \text{otherwise}
-\end{array} 
-\right.  
+$$
+V(x) = \begin{cases}
+   V_0  \quad \text{if }\ 0.9x_e<x<1.1x_e\\
+    0   \quad \ \text{otherwise}
+       \end{cases}
 $$
 
 A harmonic potential, was also used, centered at $x_e$ and adjusted with the factor $\alpha$:
