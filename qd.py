@@ -1,9 +1,14 @@
+"""
+Python program that propagates a wave packet under a specified potential.
+Considers a simple Euler integration method and a more robust Runge-Kutta 4 method.
+Diego Ontiveros
+"""
+
 from time import time as cpu_time
 import warnings
 
 import numba
 import numpy as np
-import scipy as sp
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 warnings.filterwarnings("ignore", category=numba.errors.NumbaDeprecationWarning)
