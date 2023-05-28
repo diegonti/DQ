@@ -24,7 +24,7 @@ $$
 \end{cases}
 $$
 
-The simulations have been carried out in a box of $L=100$ a.u. Forcing the wave function to be zero at the extremes of the box, i.e. $Ψ(0,t)=Ψ(L,t)=0$. To simplify the simulation, atomic units have been used for all the variables.
+The simulations have been carried out in a box of $L$ a.u. Forcing the wave function to be zero at the extremes of the box, i.e. $Ψ(0,t)=Ψ(L,t)=0$. To simplify the simulation, atomic units have been used for all the variables.
 
 Four different potentials are considered. First, the case of a free particle with no potential. A potential barrier of $V_0$ value centered at $x_e$, was also considered:
 

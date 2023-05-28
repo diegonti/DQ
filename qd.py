@@ -69,13 +69,16 @@ def get_V(x,type:str=None,t=None,**params):
     return V
 
 def morse(x,D,xe,k):
+    """Morse potential of the form V(x) = D*(1-exp(-a*(x-xe)))**2"""
     alpha = np.sqrt(k/(2*D))
     return D*(1-np.exp(-alpha*(x-xe)))**2
 
 def harmonic(x,xe,k):
+    """Harmonic potential of the form V(x) = 0.5*k*(x-xe)**2"""
     return 0.5*k*(x-xe)**2
 
 def barrier(x,xe,V0):
+    """Barrier potential centered at xe and value V0"""
     V = np.zeros(len(x))
     sites = np.logical_and( x>0.9*xe , x<1.1*xe)
     V[sites] = V0
@@ -177,6 +180,7 @@ def Animation(frame):
 ########################### Evolution Functions #################################33
 @numba.jit(nopython=True, nogil=True, cache=True)
 def get_k(fR,fI,V):
+    """Gets the k arrays for the RK4 method."""
     fR_c = fR.copy()
     for i in range(1,Nx-1):
         fR[i] = -Ck*(fI[i+1]-2*fI[i]+fI[i-1]) + V[i]*fI[i]/h
