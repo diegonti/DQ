@@ -105,14 +105,13 @@ def Animation_split(frame):
     f2t, = ax1.plot(x,f2_frames[frame],c="k",label="$|\psi|^2(t)$")
 
     # Momentum Part
-    fRt_K, = ax2.plot(p,fR_K_frames[frame],c="red",label="$\psi_R(t)$", alpha=0.5)
-    fIt_K, = ax2.plot(p,fI_K_frames[frame],c="royalblue",label="$\psi_I(t)$", alpha=0.5)
-    f2t_K, = ax2.plot(p,f2_K_frames[frame],c="k",label="$|\psi|^2(t)$")
-
+    fRt_K, = ax2.plot(p,fR_K_frames[frame],c="red",label="$\psi_R^k(t)$", alpha=0.5)
+    fIt_K, = ax2.plot(p,fI_K_frames[frame],c="royalblue",label="$\psi_I^k(t)$", alpha=0.5)
+    f2t_K, = ax2.plot(p,f2_K_frames[frame],c="k",label="$|\psi^k|^2(t)$")
 
 
     # Walls
-    V1 = ax1.plot(x,V, c="grey", alpha=0.5)
+    V1 = ax1.plot(x,V-Ek, c="grey", alpha=0.5)
     # V2 = ax2.plot(x,V, c="grey", alpha=0.5)
 
     wall1 = ax1.axvline(x[0],ymin=0,c="k",alpha=0.5)
@@ -133,12 +132,13 @@ def Animation_split(frame):
     ax1.set_xlabel("x");ax1.set_ylabel("$\psi$")
     ax2.set_xlabel("k");ax2.set_ylabel("$\psi$")
 
-    ax1.set_ylim(-1,1)
-    ax2.set_ylim(-2,2)
+    ax1.set_ylim(-0.5,0.5)
+    ax2.set_ylim(-1,1)
     ax2.set_xlim(-5,5)
 
-    ax1.legend(loc=(0.75,0.78))
-    ax2.legend(loc=(0.75,0.78))
+    ax1.legend(bbox_to_anchor=(0.25, 1.02, 0.75, 0.2), loc="lower left",
+               borderaxespad=0, ncol=3)
+    # ax2.legend(loc=(0.75,0.78))
 
     fig.tight_layout()
 
@@ -192,7 +192,7 @@ def get_k(fR,fI,V):
     
 
 @numba.jit(nopython=True, nogil=True, cache=True)
-def evolve(fR,fI,V):
+def Euler(fR,fI,V):
     """Evolves the real and imaginary part of the Wavefunction. Uses numba to accelerate the process.
 
     Parameters
@@ -216,7 +216,7 @@ def evolve(fR,fI,V):
 
 
 # @numba.jit(nogil=True, cache=True)
-def evolveRK(fR,fI,V):
+def RK4(fR,fI,V):
     """Evolves the real and imaginary part of the Wavefunctionm using the RK4 method.
 
     Parameters
@@ -280,19 +280,24 @@ Eh = hbar**2/(me*a0**2)
 # Spatial Inputs
 L = 100
 dx = 0.1
-x0 = 40
 center = L/2
+x0 = center
 x = np.arange(0,L+dx,dx)
 Nx = len(x)
 
 # Time Inputs
 dt = 1e-3                      # Time step (au)
-Nt = 500000                    # Time points
+Nt = 200000                    # Time points
+
+Evolver = RK4
+if Evolver == RK4: dt=1e-3; Nt=200000
+elif Evolver == Euler: dt=1e-4; Nt=2000000
 duration = Nt*dt               # Total time
 t = np.arange(0,duration+dt,dt)
 
+
 # Animation Inputs
-animation_frames = 50
+animation_frames = 400
 animation_name = "dq.gif"
 Animator = Animation_split
 
@@ -302,16 +307,18 @@ k = 3
 w = 1
 s = 2
 h = 1
-m = 5
+m = 2
 
 C = 1/(1*pi*s**2)**(1/4)
 Ck = h/(2*m*dx**2)
 Ek = (h*k)**2/(2*m)
+potential_type = "morse"
 
 # Initialization
 fR = boundary(get_fR(x,0))
 fI = boundary(get_fI(x,0))
-V = get_V(x,type="morse", xe=center, k=0.001*k)
+V = get_V(x,type=potential_type, xe=center,k=0.01*k)
+V_m = V-Ek
 
 
 psi_K = np.fft.fft(fR+1j*fI)
@@ -329,7 +336,7 @@ fR_frames, fI_frames, f2_frames, norm_frames, norm_split_frames = [],[],[],[],[]
 fR_K_frames, fI_K_frames, f2_K_frames, norm_K_frames, norm_K_split_frames = [],[],[],[],[]
 
 for i,t_i in enumerate(t):
-    fR,fI = evolveRK(fR,fI,V)
+    fR,fI = Evolver(fR,fI,V)
 
     
     # Save frames for animation
@@ -347,12 +354,20 @@ for i,t_i in enumerate(t):
         fI_K_frames.append(fI_K.copy())
         f2_K_frames.append(mod_K.copy())
 
-        norm1 = get_norm(fR[:int(Nx/2)],fI[:int(Nx/2)])
-        norm2 = get_norm(fR[int(Nx/2):],fI[int(Nx/2):])     
-        norm_split_frames.append([norm1,norm2])   
+        # Norm splitting labels depending on potential
+        if potential_type == "morse" or potential_type == "harmonic":
+            norm1 = get_norm(fR[np.logical_and(V_m>mod,x<50)],fI[np.logical_and(V_m>mod,x<50)])
+            norm2 = get_norm(fR[np.logical_and(V_m>mod,x>50)],fI[np.logical_and(V_m>mod,x>50)])     
+            norm_split_frames.append([norm1,norm2])   
+            norm = get_norm(fR[V_m<mod],fI[V_m<mod])
+            norm_frames.append(norm)
+        else:
+            norm1 = get_norm(fR[:int(Nx/2)],fI[:int(Nx/2)])
+            norm2 = get_norm(fR[int(Nx/2):],fI[int(Nx/2):])     
+            norm_split_frames.append([norm1,norm2])  
+            norm = get_norm(fR,fI)
+            norm_frames.append(norm)
                                  
-        norm = get_norm(fR,fI)
-        norm_frames.append(norm)
     
     # % Completed
     if i%(Nt/10) == 0:
@@ -369,7 +384,7 @@ print(f"\nProcess finished in {finish_time-initial_time:.2f}s")
 print("\nStarting animation...")
 initial_time2  = cpu_time()
 
-if Animator == Animation_split: fig,(ax1,ax2) = plt.subplots(1,2,figsize=(10,4))
+if Animator == Animation_split: fig,(ax1,ax2) = plt.subplots(2,1,figsize=(6,8))
 else: fig, ax1 = plt.subplots()
 fig.tight_layout()
 
@@ -379,5 +394,4 @@ animation.save(animation_name,dpi=120,writer=PillowWriter(fps=25))
 finish_time2  = cpu_time()
 print(f"Process finished in {finish_time2-initial_time2:.2f}s")
 
-# Test potencial Morse y harmonico con diferentes energias y distancias.
 
