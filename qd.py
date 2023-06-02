@@ -1,6 +1,15 @@
 """
 Python program that propagates a wave packet under a specified potential.
 Considers a simple Euler integration method and a more robust Runge-Kutta 4 method.
+
+Parameters that work well are:
+Euler: dt = 1e-4, Nt = 2000000
+RK4 : dt = 1e-3, Nt = 200000
+
+Depending on the animation frames generated it will take longer or shorter.
+animation_frames = 100 takes about 20-30 seconds. More frames will make the GIF 
+go smoother and slower, but will take more time.
+
 Diego Ontiveros
 """
 
@@ -85,7 +94,7 @@ def barrier(x,xe,V0):
     return V
 
 
-
+# Norm and module functions
 @numba.jit(nopython=True, nogil=True, cache=True)
 def get_norm(fR,fI): return np.sum(module(fR,fI))*dx
     
@@ -179,19 +188,6 @@ def Animation(frame):
 
 ########################### Evolution Functions #################################33
 @numba.jit(nopython=True, nogil=True, cache=True)
-def get_k(fR,fI,V):
-    """Gets the k arrays for the RK4 method."""
-    fR_c = fR.copy()
-    for i in range(1,Nx-1):
-        fR[i] = -Ck*(fI[i+1]-2*fI[i]+fI[i-1]) + V[i]*fI[i]/h
-
-    for i in range(1,Nx-1):
-        fI[i] = Ck*(fR_c[i+1]-2*fR_c[i]+fR_c[i-1]) - V[i]*fR_c[i]/h
-
-    return fR, fI
-    
-
-@numba.jit(nopython=True, nogil=True, cache=True)
 def Euler(fR,fI,V):
     """Evolves the real and imaginary part of the Wavefunction. Uses numba to accelerate the process.
 
@@ -214,6 +210,18 @@ def Euler(fR,fI,V):
 
     return fR, fI
 
+
+@numba.jit(nopython=True, nogil=True, cache=True)
+def get_k(fR,fI,V):
+    """Gets the k arrays for the RK4 method."""
+    fR_c = fR.copy()
+    for i in range(1,Nx-1):
+        fR[i] = -Ck*(fI[i+1]-2*fI[i]+fI[i-1]) + V[i]*fI[i]/h
+
+    for i in range(1,Nx-1):
+        fI[i] = Ck*(fR_c[i+1]-2*fR_c[i]+fR_c[i-1]) - V[i]*fR_c[i]/h
+
+    return fR, fI
 
 # @numba.jit(nogil=True, cache=True)
 def RK4(fR,fI,V):
@@ -277,58 +285,55 @@ a0 = 5.29177210903e-11
 e = 1.602176634e-19
 Eh = hbar**2/(me*a0**2)
 
-# Spatial Inputs
-L = 100
-dx = 0.1
-center = L/2
-x0 = center
-x = np.arange(0,L+dx,dx)
-Nx = len(x)
+## Spatial Inputs (a.u.)
+L = 100                         # Box lenght
+dx = 0.1                        # Box spacing
+center = L/2                    # Center of the box
+x0 = center                     # Initial position 
+x = np.arange(0,L+dx,dx)        # Position array
+Nx = len(x)                     # Number of x points
 
-# Time Inputs
-dt = 1e-3                      # Time step (au)
-Nt = 200000                    # Time points
-
-Evolver = RK4
-if Evolver == RK4: dt=1e-3; Nt=200000
-elif Evolver == Euler: dt=1e-4; Nt=2000000
-duration = Nt*dt               # Total time
-t = np.arange(0,duration+dt,dt)
-
-
-# Animation Inputs
-animation_frames = 400
-animation_name = "dq.gif"
-Animator = Animation_split
-
-# Wavefunction inputs:
-C = 1
-k = 3
-w = 1
-s = 2
-h = 1
-m = 2
-
-C = 1/(1*pi*s**2)**(1/4)
-Ck = h/(2*m*dx**2)
-Ek = (h*k)**2/(2*m)
-potential_type = "morse"
-
-# Initialization
-fR = boundary(get_fR(x,0))
-fI = boundary(get_fI(x,0))
-V = get_V(x,type=potential_type, xe=center,k=0.01*k)
-V_m = V-Ek
+## Setting evolution
+Evolver = RK4                   
+if Evolver == RK4:              # dt and Nt for RK4 method
+    dt=1e-3; Nt=200000          # dt=timestep, Nt=timepoints
+elif Evolver == Euler: 
+    dt=1e-4; Nt=2000000         # dt and Nt for Euler method
+duration = Nt*dt                # Total time
+t = np.arange(0,duration+dt,dt) # time array
 
 
-psi_K = np.fft.fft(fR+1j*fI)
-fR_K,fI_K = psi_K.real,psi_K.imag
-conts = get_norm(fR_K,fI_K)
-conts = np.sqrt(conts)
-p = np.fft.fftfreq(len(psi_K))*1/dx*2*pi
+## Animation Inputs
+animation_frames = 400          # Frames for the animation
+animation_name = "dq.gif"       # Name of the GUF created
+Animator = Animation_split      # Function to animate ("Animation" or "Animation_split")
+
+## Wavefunction inputs (a.u.)
+k = 3           # Wave number
+w = 1           # Angular frequency
+s = 2           # Sigma (gaussian broadening)
+h = 1           # Reduced Plank's constant
+m = 2           # Mass
+
+C = 1/(1*pi*s**2)**(1/4)        # Normalization constant
+Ck = h/(2*m*dx**2)              # Group of constants that is frequently used
+Ek = (h*k)**2/(2*m)             # Energy of wavepacket
+potential_type = "morse"        # Type of potential
 
 
-# Integration Loop
+## Initialization
+fR = boundary(get_fR(x,0))                              # Real part of wavefunction at t=0
+fI = boundary(get_fI(x,0))                              # Imaginary part of wavefunction at t=0
+V = get_V(x,type=potential_type, xe=center,k=0.01*k)    # Potential array (set type and parameters)
+V_m = V-Ek                                              # Corrected potential with the packet energy (for better visualization when plotting)
+
+psi_K = np.fft.fft(fR+1j*fI)                            # Total wavefunction in momentum space
+fR_K,fI_K = psi_K.real,psi_K.imag                       # Separating real and imaginary parts
+conts = np.sqrt(get_norm(fR_K,fI_K))                    # Normalization constant 
+p = np.fft.fftfreq(len(psi_K))*1/dx*2*pi                # Momentum array of values for momenutm space
+
+
+## Integration Loop
 print("\nStarting integration...")
 print("Completed:", end=" ")
 
@@ -336,39 +341,42 @@ fR_frames, fI_frames, f2_frames, norm_frames, norm_split_frames = [],[],[],[],[]
 fR_K_frames, fI_K_frames, f2_K_frames, norm_K_frames, norm_K_split_frames = [],[],[],[],[]
 
 for i,t_i in enumerate(t):
-    fR,fI = Evolver(fR,fI,V)
+    fR,fI = Evolver(fR,fI,V)    # Evolves wavefunction
 
     
     # Save frames for animation
     if i%int(Nt/animation_frames) == 0 :
-        psi_K = np.fft.fft(fR+1j*fI)
-        fR_K,fI_K = psi_K.real/conts,psi_K.imag/conts
+        psi_K = np.fft.fft(fR+1j*fI)                    # Computes momentum wavefunction
+        fR_K,fI_K = psi_K.real/conts,psi_K.imag/conts   # Normalizes and separates real/imaginary
 
-        mod = module(fR,fI)
+        mod = module(fR,fI)                             # Module of real space wavefunction
+        mod_K = module(fR_K,fI_K)                       # Module of momentum space wavefunction
+
+        # Append wavefunctions to lists
         fR_frames.append(fR.copy())
         fI_frames.append(fI.copy())
         f2_frames.append(mod.copy())
 
-        mod_K = module(fR_K,fI_K)
         fR_K_frames.append(fR_K.copy())
         fI_K_frames.append(fI_K.copy())
         f2_K_frames.append(mod_K.copy())
 
         # Norm splitting labels depending on potential
         if potential_type == "morse" or potential_type == "harmonic":
+            # For harmonic or morse potentials, counts the norm that is outside and inside the potential
             norm1 = get_norm(fR[np.logical_and(V_m>mod,x<50)],fI[np.logical_and(V_m>mod,x<50)])
             norm2 = get_norm(fR[np.logical_and(V_m>mod,x>50)],fI[np.logical_and(V_m>mod,x>50)])     
             norm_split_frames.append([norm1,norm2])   
             norm = get_norm(fR[V_m<mod],fI[V_m<mod])
             norm_frames.append(norm)
         else:
+            # For barrier potential, counts the norm on the left and right of the barriers
             norm1 = get_norm(fR[:int(Nx/2)],fI[:int(Nx/2)])
             norm2 = get_norm(fR[int(Nx/2):],fI[int(Nx/2):])     
             norm_split_frames.append([norm1,norm2])  
             norm = get_norm(fR,fI)
             norm_frames.append(norm)
                                  
-    
     # % Completed
     if i%(Nt/10) == 0:
         print(f"{int(100*i/Nt)}% ",sep=" ",end="",flush=True)
@@ -380,7 +388,7 @@ finish_time = cpu_time()
 print(f"\nProcess finished in {finish_time-initial_time:.2f}s")
 
 
-# Creating GIF animation of the evolution of the wavefunction
+## Creating GIF animation of the evolution of the wavefunction
 print("\nStarting animation...")
 initial_time2  = cpu_time()
 
@@ -393,5 +401,4 @@ animation.save(animation_name,dpi=120,writer=PillowWriter(fps=25))
 
 finish_time2  = cpu_time()
 print(f"Process finished in {finish_time2-initial_time2:.2f}s")
-
 
